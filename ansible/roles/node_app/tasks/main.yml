@@ -1,0 +1,2 @@
+- name: Incluir tareas de despliegue
+  import_tasks: deploy.yml

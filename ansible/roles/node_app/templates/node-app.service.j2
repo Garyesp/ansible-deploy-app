@@ -1,0 +1,14 @@
+[Unit]
+Description=Aplicación Node.js (Desplegada con Ansible)
+After=network.target
+
+[Service]
+User=deploy
+WorkingDirectory=/home/deploy/apps/{{ app_name }}/app
+ExecStart=/usr/bin/node /home/deploy/apps/{{ app_name }}/app/index.js
+Restart=always
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target

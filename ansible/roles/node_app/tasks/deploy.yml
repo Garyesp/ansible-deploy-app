@@ -1,0 +1,36 @@
+- name: Crear directorio de la app
+  file:
+    path: /home/deploy/apps/{{ app_name }}
+    state: directory
+    owner: deploy
+    group: deploy
+    mode: '0755'
+
+- name: Clonar repositorio
+  git:
+    repo: "{{ repo_url }}"
+    dest: /home/deploy/apps/{{ app_name }}
+    version: "{{ git_ref }}"
+    force: yes
+    update: yes
+
+- name: Instalar dependencias npm
+  npm:
+    path: /home/deploy/apps/{{ app_name }}/app
+    production: yes
+
+- name: Copiar servicio systemd
+  template:
+    src: node-app.service.j2
+    dest: /etc/systemd/system/{{ app_name }}.service
+  become: yes
+  notify:
+    - Recargar systemd
+    - Reiniciar app
+
+- name: Asegurar que app está iniciada y habilitada
+  systemd:
+    name: "{{ app_name }}"
+    state: started
+    enabled: yes
+  become: yes

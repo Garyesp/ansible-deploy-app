@@ -1,0 +1,63 @@
+name: CI/CD - Despliegue con Ansible
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'Rama/tag/commit a desplegar'
+        required: false
+        default: 'main'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Instalar dependencias y ejecutar tests
+      run: |
+        cd app
+        npm ci
+        npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Configurar SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        
+    - name: Instalar Ansible
+      run: |
+        sudo apt update
+        sudo apt install -y ansible
+        ansible --version
+        
+    - name: Ejecutar playbook de Ansible
+      env:
+        GIT_REF: ${{ github.event.inputs.git_ref || github.ref_name }}
+      run: |
+        cd ansible
+        ansible-playbook playbooks/deploy.yml \
+          -i inventories/production.yml \
+          --private-key ~/.ssh/id_ed25519 \
+          -e "repo_url=https://github.com/${{ github.repository }}.git" \
+          -e "app_name=myapp"

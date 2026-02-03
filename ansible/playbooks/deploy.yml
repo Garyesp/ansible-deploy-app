@@ -1,0 +1,10 @@
+- name: Desplegar aplicación Node.js
+  hosts: all
+  become: no
+  
+  vars:
+    git_ref: "{{ lookup('env', 'GIT_REF') | default('main') }}"
+    app_name: "myapp"
+    
+  roles:
+    - node_app
